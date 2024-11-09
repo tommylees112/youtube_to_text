@@ -9,6 +9,14 @@ dependencies = [
     "loguru>=0.7.2",
     "openai-whisper>=20240930",
     "pydub>=0.25.1",
+    "pytest>=8.3.3",
     "pytube>=15.0.0",
     "yt-dlp>=2024.11.4",
+]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow'"  # Skip slow tests by default
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
 ]

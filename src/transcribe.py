@@ -1,18 +1,21 @@
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import whisper
 from loguru import logger
 
 
 def transcribe_audio(
-    audio_file: Path, model_str: Literal["base", "turbo"] = "turbo"
+    audio_file: Path,
+    model_str: Literal["base", "turbo"] = "turbo",
+    kwargs: dict[str, Any] = {},
 ) -> list[dict]:
     """Transcribe an audio file using the Whisper model.
 
     Args:
         audio_file (Path): The path to the audio file to transcribe.
         model_str (Literal["base", "turbo"], optional): The model to use for transcription. Defaults to "turbo".
+        kwargs (dict[str, Any], optional): Additional keyword arguments to pass to the Whisper model .transcribe() method.
 
     Returns:
         list[dict]: The transcription result. Three keys: "segments", "text", and "language".
@@ -27,6 +30,7 @@ def transcribe_audio(
             word_timestamps=True,
             verbose=True,
             language="en",
+            **kwargs,
         )
         logger.success("Transcription completed successfully")
         return result

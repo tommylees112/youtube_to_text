@@ -93,5 +93,3 @@ if __name__ == "__main__":
 
     with open("transcript_chunked.txt", "w") as f:
         f.write(transcript)
-
-    raise AssertionError

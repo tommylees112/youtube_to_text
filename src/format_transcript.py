@@ -35,7 +35,13 @@ def format_transcript(segments: dict, timestamps: bool = True) -> str:
 
 
 if __name__ == "__main__":
+    import sys
+    from os.path import abspath, dirname
     from pathlib import Path
+
+    # Add the project root to the Python path
+    project_root = dirname(dirname(abspath(__file__)))
+    sys.path.append(project_root)
 
     from tests.segments import TEST_SEGMENTS
 

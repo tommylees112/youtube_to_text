@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# test text files
+transcript.txt
+transcript_timestamps.txt
+transcript_chunked.txt

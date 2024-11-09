@@ -5,9 +5,9 @@ from pathlib import Path
 
 import click
 
-from download import download_audio
-from format_transcript import format_transcript
-from transcribe import transcribe_audio
+from src.download import download_audio
+from src.format_transcript import format_transcript
+from src.transcribe import transcribe_audio
 
 
 def get_downloads_dir():
