@@ -2,6 +2,7 @@ import os
 import tempfile
 import warnings
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -26,7 +27,8 @@ def get_downloads_dir():
     "--output",
     "-o",
     help="Output file path for the transcript",
-    default="transcript.txt",
+    default=None,
+    nargs="?",
 )
 @click.option(
     "--keep-audio/--no-keep-audio",
@@ -45,14 +47,16 @@ def get_downloads_dir():
     default=True,
 )
 def main(
-    url: str, output: str, keep_audio: bool, output_dir: Path, with_timestamps: bool
+    url: str,
+    output: Optional[str] = None,
+    keep_audio: bool = False,
+    output_dir: Path = get_downloads_dir(),
+    with_timestamps: bool = True,
 ) -> None:
     """Convert YouTube videos to text transcripts.
 
     URL: The YouTube video URL to transcribe
     """
-    output_fpath = Path(output_dir) / output
-
     with tempfile.TemporaryDirectory() as temp_dir:
         click.echo(f"Downloading video from: {url}")
         audio_path = download_audio(url, output_path=temp_dir)
@@ -71,7 +75,15 @@ def main(
         else:
             transcript_text = transcript["text"]
 
+        # get title if output is None
+        if output is None:
+            # get the title from audio_path
+            output = audio_path.stem
+            output += ".txt"
+
         # Save transcript to file
+        output_fpath = Path(output_dir) / output
+
         with open(output_fpath, "w") as f:
             f.write(transcript_text)
 
