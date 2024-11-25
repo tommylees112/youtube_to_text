@@ -20,6 +20,9 @@ def transcribe_audio(
     Returns:
         list[dict]: The transcription result. Three keys: "segments", "text", and "language".
     """
+    default_kwargs = {"language": "en", "verbose": False, "word_timestamps": True}
+    kwargs = {**default_kwargs, **kwargs}
+
     logger.info(f"Loading Whisper {model_str} model...")
     model = whisper.load_model(model_str)
 
@@ -27,9 +30,6 @@ def transcribe_audio(
     try:
         result = model.transcribe(
             audio_file.as_posix(),
-            word_timestamps=True,
-            verbose=True,
-            language="en",
             **kwargs,
         )
         logger.success("Transcription completed successfully")
