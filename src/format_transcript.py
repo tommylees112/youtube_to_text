@@ -1,3 +1,6 @@
+import click
+
+
 def format_timestamp(seconds: float) -> str:
     """Convert seconds to HH:MM:SS format."""
     hours = int(seconds // 3600)
@@ -34,20 +37,68 @@ def format_transcript(segments: dict, timestamps: bool = True) -> str:
     return formatted_transcript
 
 
-if __name__ == "__main__":
-    import sys
-    from os.path import abspath, dirname
+@click.command()
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option(
+    "--output",
+    "-o",
+    help="Output file path for the formatted transcript",
+    default=None,
+)
+@click.option(
+    "--with-timestamps/--no-timestamps",
+    help="Include timestamps in the output",
+    default=False,
+)
+def cli(input_file, output, with_timestamps):
+    """Format a transcript file with optional timestamps.
+
+    INPUT_FILE: Path to the input transcript file (txt format)
+    """
     from pathlib import Path
 
-    # Add the project root to the Python path
-    project_root = dirname(dirname(abspath(__file__)))
-    sys.path.append(project_root)
+    # Read the input file
+    with open(input_file, "r") as f:
+        text = f.read()
 
-    from tests.segments import TEST_SEGMENTS
+    # Parse the text into segments
+    segments = []
+    for line in text.strip().split("\n"):
+        if line.startswith("["):
+            # Extract timestamp and text
+            timestamp_part, text_part = line.split("]", 1)
+            start_str, end_str = timestamp_part[1:].split(" -> ")
 
-    transcript_fpath = Path("/Users/tommylees/Downloads/transcript.txt")
-    with open(transcript_fpath, "r") as f:
-        transcript = f.read()
+            # Convert timestamps to seconds
+            def time_to_seconds(time_str):
+                h, m, s = map(int, time_str.split(":"))
+                return h * 3600 + m * 60 + s
 
-    formatted_transcript = format_transcript(TEST_SEGMENTS)
-    print(formatted_transcript)
+            segments.append(
+                {
+                    "start": time_to_seconds(start_str),
+                    "end": time_to_seconds(end_str),
+                    "text": text_part.strip(),
+                }
+            )
+
+    # Format the transcript
+    formatted_text = format_transcript(segments, timestamps=with_timestamps)
+
+    # Handle output
+    if output is None:
+        output = Path(input_file).with_suffix(".formatted.txt")
+
+    with open(output, "w") as f:
+        f.write(formatted_text)
+
+    click.echo(f"Formatted transcript saved to: {output}")
+
+
+def main():
+    """Command line interface for formatting transcripts."""
+    cli()
+
+
+if __name__ == "__main__":
+    main()
