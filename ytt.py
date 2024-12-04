@@ -5,8 +5,11 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from loguru import logger
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._transcripts import TranscriptsDisabled
 
-from src.download import download_audio
+from src.download import download_audio, get_video_title
 from src.format_transcript import format_transcript
 from src.transcribe import transcribe_audio
 
@@ -19,6 +22,39 @@ def get_downloads_dir():
         return Path.home() / "Downloads"
     else:
         raise OSError(f"Unsupported operating system: {os.name}")
+
+
+def extract_transcript(url: str) -> Optional[dict]:
+    # get youtube video_id v= OR shorts/
+    video_id = url.split("v=")[1]
+
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    except TranscriptsDisabled:
+        logger.info(
+            "Transcripts are disabled for this video. Reverting to download audio and whisper convert."
+        )
+        return None
+
+    # Convert YouTube transcript format to match Whisper format
+    formatted_segments = []
+    full_text = []
+
+    for segment in transcript:
+        formatted_segments.append(
+            {
+                "start": segment["start"],
+                "end": segment["start"] + segment["duration"],
+                "text": segment["text"],
+            }
+        )
+        full_text.append(segment["text"])
+
+    return {
+        "segments": formatted_segments,
+        "text": " ".join(full_text),
+        "language": "en",  # YouTube transcripts are usually in the video's language
+    }
 
 
 @click.command()
@@ -57,44 +93,53 @@ def main(
 
     URL: The YouTube video URL to transcribe
     """
-    with tempfile.TemporaryDirectory() as temp_dir:
-        click.echo(f"Downloading video from: {url}")
-        audio_path = download_audio(url, output_path=temp_dir)
+    # First try to extract existing transcript
+    if "v=" in url:
+        transcript = extract_transcript(url)
+    else:
+        transcript = None
 
-        assert audio_path.exists(), "Audio file not found"
-        click.echo(f"Downloaded audio to: {audio_path}")
+    if transcript is None:
+        # Fall back to audio download and whisper conversion
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # ENSURE that this is all done INSIDE the temp_dir context. cleanup is automatic after the with block
+            click.echo(f"Downloading video from: {url}")
+            audio_path = download_audio(url, output_path=temp_dir)
 
-        click.echo("Transcribing audio...")
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=FutureWarning)
-            transcript = transcribe_audio(audio_path)
+            assert audio_path.exists(), "Audio file not found"
+            click.echo(f"Downloaded audio to: {audio_path}")
 
-        # Format the transcript with timestamps if requested
-        if with_timestamps:
-            transcript_text = format_transcript(transcript["segments"])
-        else:
-            transcript_text = transcript["text"]
+            click.echo("Transcribing audio...")
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=FutureWarning)
+                transcript = transcribe_audio(audio_path)
 
-        # get title if output is None
-        if output is None:
-            # get the title from audio_path
-            output = audio_path.stem
-            output += ".txt"
+    # Format the transcript with timestamps if requested
+    if with_timestamps:
+        transcript_text = format_transcript(transcript["segments"])
+    else:
+        transcript_text = transcript["text"]
 
-        # Save transcript to file
-        output_fpath = Path(output_dir) / output
+    # get title if output is None
+    if output is None:
+        # get the title from audio_path
+        output = get_video_title(url)
+        output += ".txt"
 
-        with open(output_fpath, "w") as f:
-            f.write(transcript_text)
+    # Save transcript to file
+    output_fpath = Path(output_dir) / output
 
-        # Optionally save the audio file
-        if keep_audio:
-            downloads_dir = Path.home() / "Downloads"
-            final_audio = downloads_dir / audio_path.name
-            os.replace(audio_path, final_audio)
-            click.echo(f"Audio saved to: {final_audio}")
+    with open(output_fpath, "w") as f:
+        f.write(transcript_text)
 
-        click.echo(f"Transcript saved to: {output_fpath}")
+    # Optionally save the audio file
+    if keep_audio:
+        downloads_dir = Path.home() / "Downloads"
+        final_audio = downloads_dir / audio_path.name
+        os.replace(audio_path, final_audio)
+        click.echo(f"Audio saved to: {final_audio}")
+
+    click.echo(f"Transcript saved to: {output_fpath}")
 
 
 if __name__ == "__main__":

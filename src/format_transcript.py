@@ -14,6 +14,7 @@ def format_transcript(segments: dict, timestamps: bool = True) -> str:
 
     Args:
         segments: List of transcript segments
+            {"start": float, "end": float, "text": str}
         timestamps: If True, include timestamps. If False, return plain text.
 
     Returns:

@@ -31,6 +31,15 @@ def sanitize_title(title: str) -> str:
     return title
 
 
+def get_video_title(url: str) -> str:
+    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+        info = ydl.extract_info(url, download=False)
+        original_title = info.get("title", "untitled")
+        sanitized_title = sanitize_title(original_title)
+
+    return sanitized_title
+
+
 def download_audio(url: str, output_path: Union[str, Path]) -> Path:
     """Download audio from YouTube URL.
 
@@ -45,10 +54,7 @@ def download_audio(url: str, output_path: Union[str, Path]) -> Path:
     logger.debug(f"Output path: {output_path}")
 
     # First, get the info without downloading
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
-        info = ydl.extract_info(url, download=False)
-        original_title = info.get("title", "untitled")
-        sanitized_title = sanitize_title(original_title)
+    sanitized_title = get_video_title(url)
 
     # Now download with the sanitized filename
     ydl_opts = {
