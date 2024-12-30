@@ -2,7 +2,7 @@
 
 Convert any YouTube video into text transcripts with just one command! Perfect for content creators, researchers, and anyone who needs transcriptions.
 
-Tool built with [uv](https://docs.astral.sh/uv/), [cursor](https://www.cursor.com/) and [OpenAI's Whisper](https://platform.openai.com/docs/guides/speech-recognition).
+Tool built with [uv](https://docs.astral.sh/uv/) and [OpenAI's Whisper](https://platform.openai.com/docs/guides/speech-recognition).
 
 ## ✨ Features
 
