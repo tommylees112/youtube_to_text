@@ -25,8 +25,14 @@ def get_downloads_dir():
 
 
 def extract_transcript(url: str) -> Optional[dict]:
-    # get youtube video_id v= OR shorts/
-    video_id = url.split("v=")[1]
+    # Extract video_id from various YouTube URL formats
+    if "v=" in url:
+        video_id = url.split("v=")[1].split("&")[0]  # Handle URL parameters
+    elif "shorts/" in url:
+        video_id = url.split("shorts/")[1].split("?")[0]  # Handle shorts URLs
+    else:
+        logger.error(f"Could not extract video ID from URL: {url}")
+        return None
 
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
@@ -34,6 +40,9 @@ def extract_transcript(url: str) -> Optional[dict]:
         logger.info(
             "Transcripts are disabled for this video. Reverting to download audio and whisper convert."
         )
+        return None
+    except Exception as e:
+        logger.error(f"Failed to get transcript for video {video_id}: {e}")
         return None
 
     # Convert YouTube transcript format to match Whisper format
